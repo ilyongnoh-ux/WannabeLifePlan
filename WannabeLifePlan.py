@@ -227,7 +227,8 @@ with st.sidebar:
     with st.expander("3. 부동산 자산 (Real Estate)", expanded=True):
         with st.form("prop_form", clear_on_submit=True):
             r1_c1, r1_c2 = st.columns(2)
-            p_name = r1_c1.text_input("자산명 (예: 반포아파트)")
+            # [수정] 자산명 라벨 수정 및 placeholder '아파트' 추가
+            p_name = r1_c1.text_input("자산명", placeholder="아파트")
             p_curr = r1_c2.number_input("현재가(억)", 0, 300, 10)
             r2_c1, r2_c2 = st.columns(2)
             p_buy = r2_c1.number_input("매입가(억)", 0, 300, 5)
@@ -333,7 +334,7 @@ with c3:
 
 st.write("") 
 
-# 그래프 (축 제목 추가 & 터치 고정)
+# 그래프
 st.subheader("📈 자산별 생애 궤적")
 fig = go.Figure()
 
@@ -360,16 +361,21 @@ for p in st.session_state.properties:
                                text=f"↗ {p['name']}", showarrow=True, arrowhead=2, ay=-30, 
                                font=dict(color="#2e7d32", size=10))
 
-# [수정] 축 제목 추가 & 모바일 터치 방지
+# 범례 우측 & 축 제목 설정
 fig.update_layout(
     template="plotly_white", 
     height=400, 
     margin=dict(l=20, r=20, t=50, b=50), 
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+    
+    legend=dict(
+        orientation="v", 
+        yanchor="top", y=1, 
+        xanchor="left", x=1.02 
+    ),
+    
     dragmode=False, 
-    # 👇 축 제목 및 고정 설정
     xaxis=dict(fixedrange=True, title="경과나이 (세)"), 
-    yaxis=dict(fixedrange=True, title="금액단위 (십억원)")  
+    yaxis=dict(fixedrange=True, title="금액단위 (억원)")  
 )
 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'scrollZoom': False})
 
