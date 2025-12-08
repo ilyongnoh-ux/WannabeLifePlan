@@ -19,18 +19,17 @@ st.set_page_config(
 # CSS 스타일링
 st.markdown("""
     <style>
-    /* [1] 타이틀 반응형 & 다크모드 자동 대응 수정 */
+    /* [1] 타이틀 반응형 & 다크모드 자동 대응 */
     .responsive-title {
         font-size: clamp(1.5rem, 5vw, 2.5rem); 
         font-weight: 900;
-        /* 👇 [수정 핵심] 검정색(#000) 강제 고정 대신, 앱 테마에 따라 자동 변경되는 변수 사용 */
-        color: var(--text-color); 
+        color: var(--text-color); /* 배경색에 따라 글자색 자동 변경 (검정/흰색) */
         white-space: nowrap; 
         text-align: left;
         margin-bottom: 20px;
     }
 
-    /* 스코어카드 박스 디자인 (여기는 디자인 유지를 위해 흰 배경+검은 글씨 고정) */
+    /* 스코어카드 박스 디자인 (흰 배경+검은 글씨 고정) */
     .metric-container {
         display: flex;
         flex-direction: column;
@@ -228,7 +227,8 @@ with st.sidebar:
     with st.expander("3. 부동산 자산 (Real Estate)", expanded=True):
         with st.form("prop_form", clear_on_submit=True):
             r1_c1, r1_c2 = st.columns(2)
-            p_name = r1_c1.text_input("자산명")
+            # [수정] 자산명 입력란에 예시 추가
+            p_name = r1_c1.text_input("자산명 (예: 반포아파트)")
             p_curr = r1_c2.number_input("현재가(억)", 0, 300, 10)
             r2_c1, r2_c2 = st.columns(2)
             p_buy = r2_c1.number_input("매입가(억)", 0, 300, 5)
@@ -295,7 +295,7 @@ engine = WannabeEngine(age_curr, age_retire, age_death)
 ages, liq_norm, re_norm, ob_norm = engine.run_simulation(liquid_asset, monthly_save, monthly_spend, inf_val, return_rate, st.session_state.properties, annual_hobby_cost)
 score, grade = engine.calculate_score(ob_norm)
 
-# [수정됨] 타이틀 색상을 'var(--text-color)'로 설정하여 배경에 따라 자동 변경
+# [타이틀 반응형 & 테마 자동 대응 적용]
 st.markdown('<div class="responsive-title">📊 은퇴 준비 종합 진단</div>', unsafe_allow_html=True)
 
 # 스코어카드
