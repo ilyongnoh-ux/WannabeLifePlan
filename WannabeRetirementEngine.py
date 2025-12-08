@@ -16,25 +16,31 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS 스타일링 (다크모드/모바일 가독성 최적화 포함)
+# CSS 스타일링 (모바일 타이틀, 그래프, 리스트 가독성 해결)
 st.markdown("""
     <style>
+    /* [1] 타이틀 반응형 처리: 무조건 한 줄로 나오게 설정 */
+    .responsive-title {
+        font-size: clamp(1.5rem, 5vw, 2.5rem); /* 최소 1.5rem, 화면의 5%, 최대 2.5rem */
+        font-weight: 900;
+        color: #000000; /* 다크모드에서도 검정 */
+        white-space: nowrap; /* 줄바꿈 금지 */
+        text-align: left;
+        margin-bottom: 20px;
+    }
+
     /* 스코어카드 박스 디자인 */
     .metric-container {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: white; /* 다크모드 대응: 배경 흰색 고정 */
+        background: white; /* 배경 흰색 고정 */
         border-radius: 15px;
         padding: 20px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-        transition: transform 0.3s ease;
         border: 1px solid #f0f0f0;
         height: 160px;
-    }
-    .metric-container:hover {
-        transform: translateY(-5px);
     }
     
     .metric-icon { font-size: 3rem; margin-bottom: 10px; }
@@ -44,13 +50,12 @@ st.markdown("""
         color: #888;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 1px;
     }
     
     .metric-value {
         font-size: 2rem;
         font-weight: 800;
-        color: #333; /* 글자색 검정 고정 */
+        color: #333; /* 숫자 검정 고정 */
     }
     
     .val-safe { color: #2E8B57 !important; }
@@ -59,24 +64,39 @@ st.markdown("""
     .val-blue { color: #1E88E5 !important; }
     .val-purple { color: #8E24AA !important; }
 
+    /* [3] 부동산 목록 가독성 해결 (글자색 검정 강제) */
+    .prop-card-sell { 
+        background-color: #e8f5e9 !important; 
+        border-left: 5px solid #2e7d32; 
+        padding: 10px; 
+        border-radius: 5px; 
+        margin-bottom: 8px; 
+    }
+    .prop-card-inherit { 
+        background-color: #e3f2fd !important; 
+        border-left: 5px solid #1565c0; 
+        padding: 10px; 
+        border-radius: 5px; 
+        margin-bottom: 8px; 
+    }
+    
+    /* 카드 안의 모든 글씨를 검정색으로 강제 */
+    .prop-card-sell div, .prop-card-inherit div, .prop-title {
+        color: #000000 !important;
+        font-family: sans-serif;
+    }
+    
+    .prop-title { font-weight: bold; font-size: 14px; }
+    
     /* 사이드바 */
-    .sidebar-container { text-align: center; margin-bottom: 20px; width: 100%; }
     .sidebar-title {
-        font-size: clamp(1.4rem, 6vw, 2.2rem);
+        font-size: 1.8rem;
         font-weight: 900;
         color: #2E8B57; 
-        line-height: 1.2;
+        text-align: center;
     }
-    .sidebar-subtitle { font-size: 13px; color: #666; margin-top: 5px; }
-
-    /* 부동산 카드 */
-    .prop-card-sell { background-color: #e8f5e9 !important; border-left: 5px solid #2e7d32; padding: 10px; border-radius: 5px; margin-bottom: 8px; color: #333 !important; }
-    .prop-card-inherit { background-color: #e3f2fd !important; border-left: 5px solid #1565c0; padding: 10px; border-radius: 5px; margin-bottom: 8px; color: #333 !important; }
-    .prop-title { font-weight: bold; font-size: 14px; color: #000 !important; }
+    .sidebar-subtitle { font-size: 13px; color: #666; text-align: center; margin-bottom: 20px; }
     
-    /* 입력창 캡션 */
-    .stCaption { color: #666 !important; }
-
     /* 풋터 */
     .main-footer { margin-top: 50px; padding: 20px; border-top: 1px solid #eee; text-align: center; color: #888; font-size: 13px; }
     </style>
@@ -235,12 +255,15 @@ with st.sidebar:
             for i, p in enumerate(st.session_state.properties):
                 desc = f"매각 ({p['sell_age']}세)" if "매각" in p['strategy'] else "상속"
                 css_class = "prop-card-sell" if "매각" in p['strategy'] else "prop-card-inherit"
+                icon = "💰" if "매각" in p['strategy'] else "🎁"
                 net = p['current_val'] - p['loan']
+                
                 col_info, col_del = st.columns([8, 2])
                 with col_info:
+                    # [CSS 수정] 내부 div에 직접 스타일 적용하여 가독성 확보
                     st.markdown(f"""
                         <div class="{css_class}">
-                            <div class="prop-title">{p['name']}</div>
+                            <div class="prop-title">{icon} {p['name']}</div>
                             <div>순가치 {net}억 (대출 {p['loan']}억)</div>
                             <div>{desc}</div>
                         </div>
@@ -272,8 +295,8 @@ engine = WannabeEngine(age_curr, age_retire, age_death)
 ages, liq_norm, re_norm, ob_norm = engine.run_simulation(liquid_asset, monthly_save, monthly_spend, inf_val, return_rate, st.session_state.properties, annual_hobby_cost)
 score, grade = engine.calculate_score(ob_norm)
 
-# 타이틀 (심플한 원본 스타일)
-st.title("📊 은퇴 준비 종합 진단")
+# [1] 타이틀 반응형 적용 (무조건 한 줄)
+st.markdown('<div class="responsive-title">📊 은퇴 준비 종합 진단</div>', unsafe_allow_html=True)
 
 # 스코어카드
 c1, c2, c3 = st.columns(3)
@@ -314,7 +337,7 @@ with c3:
 
 st.write("") 
 
-# 그래프
+# [2] 그래프 설정 수정: 터치 고정 (Fixed Range) 및 드래그 방지
 st.subheader("📈 자산별 생애 궤적")
 fig = go.Figure()
 
@@ -341,25 +364,28 @@ for p in st.session_state.properties:
                                text=f"↗ {p['name']}", showarrow=True, arrowhead=2, ay=-30, 
                                font=dict(color="#2e7d32", size=10))
 
-# 그래프 모바일 대응 (높이 고정, 범례 상단)
+# 그래프 옵션: 축 고정(fixedrange) 추가하여 터치 시 변화 방지
 fig.update_layout(
     template="plotly_white", 
     height=400, 
     margin=dict(l=20, r=20, t=50, b=50), 
     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-    dragmode=False 
+    dragmode=False, # 드래그 줌 방지
+    xaxis=dict(fixedrange=True), # X축 터치/줌 고정
+    yaxis=dict(fixedrange=True)  # Y축 터치/줌 고정
 )
-st.plotly_chart(fig, use_container_width=True)
+# config에 staticPlot은 툴팁도 막으므로 제외하고, 대신 displayModeBar를 끔
+st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'scrollZoom': False})
 
 st.divider()
 
-# --- 하단 섹션: (제목 원복) "심층 분석 의견" + 3단 구성 복구 ---
+# --- 하단 섹션: 3단 구성 & 전문가 내용 복구 ---
 col_expert, col_form = st.columns([1, 1])
 
 with col_expert:
-    st.subheader("📝 심층 분석 의견") # 제목 복구
+    st.subheader("📝 심층 분석 의견")
     
-    # [1] 유동성 분석 (내용은 금융전문가 스타일 유지)
+    # [1] 유동성
     with st.expander("1. 유동성 및 현금 흐름", expanded=True):
         if score >= 90:
             st.success("✅ **'골든 포트폴리오' 달성**")
@@ -374,7 +400,7 @@ with col_expert:
             st.error(f"🆘 **즉각적인 유동성 확보 필요**")
             st.write(f"은퇴 직후 유동성 위기가 우려됩니다. 부동산 **다운사이징**을 통해 현금을 확보하거나, 재취업 등 **제2의 소득원**을 반드시 마련해야 합니다.")
 
-    # [2] 부동산 리스크 분석
+    # [2] 부동산
     with st.expander("2. 부동산 및 부채 리스크", expanded=True):
         net_re = sum([max(0, p['current_val'] - p['loan']) for p in st.session_state.properties])
         total_asset = liquid_asset + net_re
@@ -394,7 +420,7 @@ with col_expert:
             st.success(f"💵 **풍부한 유동성 ({ratio*100:.0f}%)**")
             st.write("현금 비중이 높아 위기에 강하지만, 인플레이션에는 취약할 수 있습니다. **우량 실물 자산** 비중 확대를 고려해 보세요.")
 
-    # [3] 변동성 대응 (복구된 세 번째 칸)
+    # [3] 변동성
     with st.expander("3. 변동성 대응 및 투자 전략", expanded=True):
         if return_rate_int < 3:
             st.write("보수적인 운용 중입니다. 물가 상승을 방어하기 위해 **투자형 연금** 비중을 조금 더 늘리는 것을 권장합니다.")
@@ -404,7 +430,7 @@ with col_expert:
             st.write("적절한 중위험·중수익 전략입니다. 은퇴 시점이 다가올수록 변동성을 줄이는 **TDF(Target Date Fund)** 형태의 운용이 유리합니다.")
 
 with col_form:
-    st.subheader("📞 상담 신청") # 제목 복구
+    st.subheader("📞 상담 신청")
     with st.form("save_form"):
         u_name = st.text_input("성함")
         u_phone = st.text_input("연락처")
@@ -449,5 +475,4 @@ with col_form:
             else: 
                 st.warning("⚠️ 정보를 입력해주세요.")
 
-# 풋터 (원래 내용으로 복구)
 st.markdown("""<div class="main-footer"><b>한국금융투자기술 (Korea Financial Investment Technology)</b> | CEO: 노일용 | 문의: 010-6255-9978 <br> Copyright © 2025 Wannabe Life Solution. All rights reserved.</div>""", unsafe_allow_html=True)
