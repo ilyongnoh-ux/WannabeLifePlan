@@ -97,7 +97,7 @@ def save_data_to_gsheet(data_dict):
     client = get_google_sheet_client()
     if not client: return False, "구글 시트 설정 필요"
     try:
-        sheet = client.open("Wannabe_Leads").sheet1
+        sheet = client.open("WannabeLifePlan").sheet1
         if not sheet.get_all_values():
             sheet.append_row(list(data_dict.keys()) + ["Timestamp"])
         sheet.append_row(list(data_dict.values()) + [str(datetime.now())])
