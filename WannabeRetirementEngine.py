@@ -23,13 +23,13 @@ st.markdown("""
     .responsive-title {
         font-size: clamp(1.5rem, 5vw, 2.5rem); 
         font-weight: 900;
-        color: var(--text-color); /* 배경색에 따라 글자색 자동 변경 (검정/흰색) */
+        color: var(--text-color); 
         white-space: nowrap; 
         text-align: left;
         margin-bottom: 20px;
     }
 
-    /* 스코어카드 박스 디자인 (흰 배경+검은 글씨 고정) */
+    /* 스코어카드 박스 디자인 */
     .metric-container {
         display: flex;
         flex-direction: column;
@@ -80,7 +80,6 @@ st.markdown("""
         margin-bottom: 8px; 
     }
     
-    /* 카드 안의 모든 글씨 검정색 강제 */
     .prop-card-sell div, .prop-card-inherit div, .prop-title {
         color: #000000 !important;
         font-family: sans-serif;
@@ -227,7 +226,6 @@ with st.sidebar:
     with st.expander("3. 부동산 자산 (Real Estate)", expanded=True):
         with st.form("prop_form", clear_on_submit=True):
             r1_c1, r1_c2 = st.columns(2)
-            # [수정] 자산명 입력란에 예시 추가
             p_name = r1_c1.text_input("자산명 (예: 반포아파트)")
             p_curr = r1_c2.number_input("현재가(억)", 0, 300, 10)
             r2_c1, r2_c2 = st.columns(2)
@@ -295,7 +293,7 @@ engine = WannabeEngine(age_curr, age_retire, age_death)
 ages, liq_norm, re_norm, ob_norm = engine.run_simulation(liquid_asset, monthly_save, monthly_spend, inf_val, return_rate, st.session_state.properties, annual_hobby_cost)
 score, grade = engine.calculate_score(ob_norm)
 
-# [타이틀 반응형 & 테마 자동 대응 적용]
+# 타이틀
 st.markdown('<div class="responsive-title">📊 은퇴 준비 종합 진단</div>', unsafe_allow_html=True)
 
 # 스코어카드
@@ -337,7 +335,7 @@ with c3:
 
 st.write("") 
 
-# 그래프 (터치/줌 고정)
+# 그래프
 st.subheader("📈 자산별 생애 궤적")
 fig = go.Figure()
 
@@ -398,8 +396,24 @@ with col_expert:
             st.error(f"🆘 **즉각적인 유동성 확보 필요**")
             st.write(f"은퇴 직후 유동성 위기가 우려됩니다. 부동산 **다운사이징**을 통해 현금을 확보하거나, 재취업 등 **제2의 소득원**을 반드시 마련해야 합니다.")
 
-    # [2] 부동산
+    # [2] 부동산 (여기에 강력한 상속세 경고 추가)
     with st.expander("2. 부동산 및 부채 리스크", expanded=True):
+        # 🚨 상속세 강력 경고 로직 추가
+        inherit_props = [p for p in st.session_state.properties if "상속" in p['strategy']]
+        if inherit_props:
+            inherit_val = sum([p['current_val'] for p in inherit_props])
+            st.error(f"🚨 **[치명적 위험] '부동산 상속' 경고**")
+            st.markdown(f"""
+                <div style='background-color: #ffebee; padding: 10px; border-radius: 5px; color: #b71c1c;'>
+                    <b>현재 {inherit_val}억 원 상당의 부동산을 상속할 계획입니다.</b><br><br>
+                    대한민국의 상속세율은 <b>최대 50%</b>입니다. 
+                    자녀가 충분한 현금이 없다면, 세금을 내기 위해 
+                    <b>물려주신 집을 급매(헐값)하거나 물납</b>해야 하는 비극이 발생합니다.<br><br>
+                    👉 <b>즉시 '상속세 재원 마련(종신보험)' 또는 '사전 증여' 컨설팅이 필수적입니다.</b>
+                </div>
+            """, unsafe_allow_html=True)
+            st.divider()
+
         net_re = sum([max(0, p['current_val'] - p['loan']) for p in st.session_state.properties])
         total_asset = liquid_asset + net_re
         ratio = net_re / total_asset if total_asset > 0 else 0
