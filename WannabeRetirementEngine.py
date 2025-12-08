@@ -29,7 +29,7 @@ st.markdown("""
         margin-bottom: 20px;
     }
 
-    /* 스코어카드 박스 디자인 */
+    /* [2] 스코어카드 박스 디자인 (제목 강조형) */
     .metric-container {
         display: flex;
         flex-direction: column;
@@ -38,24 +38,26 @@ st.markdown("""
         background: white; 
         border-radius: 15px;
         padding: 20px;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-        border: 1px solid #f0f0f0;
-        height: 160px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border: 1px solid #e0e0e0;
+        height: 140px; /* 높이 약간 조정 */
     }
     
-    .metric-icon { font-size: 3rem; margin-bottom: 10px; }
-    
+    /* 제목 스타일: 이모티콘+텍스트 한 줄, 크고 진하게 */
     .metric-label {
-        font-size: 1rem;
-        color: #888;
-        font-weight: 600;
-        text-transform: uppercase;
+        font-size: 1.2rem; /* 글자 키움 */
+        color: #333333; /* 진한 회색/검정으로 잘 보이게 */
+        font-weight: 800; /* 굵게 강조 */
+        margin-bottom: 10px;
+        letter-spacing: -0.5px;
+        white-space: nowrap;
     }
     
     .metric-value {
-        font-size: 2rem;
-        font-weight: 800;
-        color: #333; 
+        font-size: 2.2rem; /* 숫자 더 크게 */
+        font-weight: 900;
+        color: #000000; 
+        line-height: 1;
     }
     
     .val-safe { color: #2E8B57 !important; }
@@ -296,13 +298,12 @@ score, grade = engine.calculate_score(ob_norm)
 # 타이틀
 st.markdown('<div class="responsive-title">📊 은퇴 준비 종합 진단</div>', unsafe_allow_html=True)
 
-# 스코어카드
+# 스코어카드 (이모티콘 + 텍스트 한 줄로 변경)
 c1, c2, c3 = st.columns(3)
 with c1:
     st.markdown(f"""
         <div class="metric-container">
-            <div class="metric-icon">🎯</div>
-            <div class="metric-label">은퇴 준비 점수</div>
+            <div class="metric-label">🎯 은퇴 준비 점수</div>
             <div class="metric-value val-blue">{score}점</div>
         </div>
     """, unsafe_allow_html=True)
@@ -310,8 +311,7 @@ with c1:
 with c2:
     st.markdown(f"""
         <div class="metric-container">
-            <div class="metric-icon">🏆</div>
-            <div class="metric-label">진단 등급</div>
+            <div class="metric-label">🏆 진단 등급</div>
             <div class="metric-value val-purple">{grade.split('(')[0]}</div>
         </div>
     """, unsafe_allow_html=True)
@@ -327,8 +327,7 @@ with c3:
         color_class = "val-safe"
     st.markdown(f"""
         <div class="metric-container">
-            <div class="metric-icon">{icon}</div>
-            <div class="metric-label">현금 고갈 시점</div>
+            <div class="metric-label">{icon} 현금 고갈 시점</div>
             <div class="metric-value {color_class}">{val_text}</div>
         </div>
     """, unsafe_allow_html=True)
@@ -396,9 +395,8 @@ with col_expert:
             st.error(f"🆘 **즉각적인 유동성 확보 필요**")
             st.write(f"은퇴 직후 유동성 위기가 우려됩니다. 부동산 **다운사이징**을 통해 현금을 확보하거나, 재취업 등 **제2의 소득원**을 반드시 마련해야 합니다.")
 
-    # [2] 부동산 (여기에 강력한 상속세 경고 추가)
+    # [2] 부동산 (상속세 경고 포함)
     with st.expander("2. 부동산 및 부채 리스크", expanded=True):
-        # 🚨 상속세 강력 경고 로직 추가
         inherit_props = [p for p in st.session_state.properties if "상속" in p['strategy']]
         if inherit_props:
             inherit_val = sum([p['current_val'] for p in inherit_props])
