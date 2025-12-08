@@ -87,23 +87,35 @@ if 'properties' not in st.session_state:
 def get_google_sheet_client():
     try:
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        creds_dict = dict(st.secrets["service_account"])
+        
+        # [수정] 시크릿 이름을 유연하게 찾도록 개선 (service_account 우선)
+        if "service_account" in st.secrets:
+            creds_dict = dict(st.secrets["service_account"])
+        elif "gcp_service_account" in st.secrets:
+            creds_dict = dict(st.secrets["gcp_service_account"])
+        else:
+            return None
+
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         return gspread.authorize(creds)
-    except Exception:
+    except Exception as e:
         return None
 
 def save_data_to_gsheet(data_dict):
     client = get_google_sheet_client()
-    if not client: return False, "구글 시트 설정 필요"
+    if not client: return False, "구글 시트 연결 실패 (Secrets 설정 확인)"
     try:
+        # [수정] 시트 이름을 'WannabeLifePlan'으로 변경
         sheet = client.open("WannabeLifePlan").sheet1
+        
+        # 첫 번째 줄(헤더)이 비어있으면 자동으로 헤더 추가
         if not sheet.get_all_values():
-            sheet.append_row(list(data_dict.keys()) + ["Timestamp"])
+            sheet.append_row(list(data_dict.keys()) + ["타임스탬프"])
+            
         sheet.append_row(list(data_dict.values()) + [str(datetime.now())])
         return True, "저장 성공"
     except Exception as e:
-        return False, str(e)
+        return False, f"저장 오류: {str(e)}"
 
 # ==============================================================================
 # 1. 로직 엔진
@@ -261,16 +273,14 @@ with st.sidebar:
                         st.session_state.properties.pop(i)
                         st.rerun()
 
-    # 4. 라이프스타일 (비용 명시 및 로직 수정)
+    # 4. 라이프스타일
     with st.expander("4. 라이프스타일 (Lifestyle)", expanded=True):
         monthly_spend = st.number_input("은퇴 월 생활비(만원)", 0, 5000, 300)
         c1, c2 = st.columns(2)
         
-        # 골프 라운딩 및 비용 캡션
         golf_freq = c1.selectbox("골프 라운딩", ["안 함", "월 1회", "월 2회", "월 4회", "VIP"])
         c1.caption("기준: 회당 40만 원")
 
-        # 해외 여행 및 비용 캡션
         travel_freq = c2.selectbox("해외 여행", ["안 함", "연 1회", "연 2회", "분기별"])
         c2.caption("기준: 회당 400만 원")
 
@@ -282,7 +292,6 @@ with st.sidebar:
 golf_map = {"안 함":0, "월 1회":12, "월 2회":24, "월 4회":48, "VIP":100}
 travel_map = {"안 함":0, "연 1회":1, "연 2회":2, "분기별":4}
 
-# 비용 로직 수정 (골프 40만, 여행 400만)
 annual_hobby_cost = (golf_map[golf_freq] * 400000) + (travel_map[travel_freq] * 4000000)
 inf_val = {"안정(2%)":0.02, "보통(3.5%)":0.035, "심각(5%)":0.05}[inflation]
 
@@ -333,11 +342,10 @@ with c3:
 st.write("") 
 st.write("") 
 
-# 그래프 (툴팁 텍스트 수정 적용)
+# 그래프
 st.subheader("📈 자산별 생애 궤적 (Trajectory)")
 fig = go.Figure()
 
-# 유동자산 Trace (hovertemplate 적용)
 fig.add_trace(go.Scatter(
     x=ages, 
     y=liq_norm, 
@@ -347,7 +355,6 @@ fig.add_trace(go.Scatter(
     hovertemplate='<b>%{x}세</b><br>현금: %{y:.1f}억<extra></extra>'
 ))
 
-# 부동산 Trace (hovertemplate 적용)
 fig.add_trace(go.Scatter(
     x=ages, 
     y=re_norm, 
@@ -374,7 +381,7 @@ st.divider()
 # --- 하단 섹션 ---
 col_expert, col_form = st.columns([1, 1])
 
-# [좌측] 심층 분석 (테두리 X)
+# [좌측] 심층 분석
 with col_expert:
     st.subheader("📝 심층 분석 의견")
     
@@ -398,7 +405,7 @@ with col_expert:
     with st.expander("3. 변동성 대응", expanded=True):
         st.write("외부 경제 충격에도 자산이 유지될 확률이 높습니다.")
 
-# [우측] 상담 신청 (테두리 X, 높이 120)
+# [우측] 상담 신청 (모든 데이터 저장 구현)
 with col_form:
     st.subheader("📞 상담 신청")
     
@@ -416,7 +423,42 @@ with col_form:
             if not agree:
                 st.warning("⚠️ 개인정보 수집 및 이용에 동의해주세요.")
             elif u_name and u_phone:
-                data = {"Name": u_name, "Phone": u_phone, "Score": score, "Liquid_End": liq_norm[-1], "Memo": u_memo}
+                
+                # [부동산 상세 정보 문자열 변환]
+                props_str = ""
+                if st.session_state.properties:
+                    p_details = []
+                    for p in st.session_state.properties:
+                        detail = f"[{p['name']}: {p['current_val']}억(대출{p['loan']}억)/{p['strategy']}"
+                        if "매각" in p['strategy']:
+                            detail += f"({p['sell_age']}세)"
+                        detail += "]"
+                        p_details.append(detail)
+                    props_str = ", ".join(p_details)
+                else:
+                    props_str = "없음"
+
+                # [모든 입력 변수 저장]
+                data = {
+                    "이름": u_name,
+                    "연락처": u_phone,
+                    "현재나이": age_curr,
+                    "은퇴나이": age_retire,
+                    "기대수명": age_death,
+                    "유동자산(억)": liquid_asset,
+                    "월저축(만)": monthly_save,
+                    "투자수익률(%)": return_rate_int,
+                    "월생활비(만)": monthly_spend,
+                    "골프빈도": golf_freq,
+                    "여행빈도": travel_freq,
+                    "물가상승률": inflation,
+                    "부동산상세": props_str,  # <-- 상세 정보 저장
+                    "은퇴점수": score,
+                    "현금고갈시점": f"{ob_norm}세" if ob_norm else "유지",
+                    "최종잔액(억)": liq_norm[-1],
+                    "문의사항": u_memo
+                }
+                
                 res, msg = save_data_to_gsheet(data)
                 if res: st.balloons(); st.success("✅ 신청 완료! 리포트를 곧 보내드리겠습니다.")
                 else: st.error(f"⚠️ {msg}")
