@@ -16,26 +16,27 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS 스타일링 (모바일 타이틀, 그래프, 리스트 가독성 해결)
+# CSS 스타일링
 st.markdown("""
     <style>
-    /* [1] 타이틀 반응형 처리: 무조건 한 줄로 나오게 설정 */
+    /* [1] 타이틀 반응형 & 다크모드 자동 대응 수정 */
     .responsive-title {
-        font-size: clamp(1.5rem, 5vw, 2.5rem); /* 최소 1.5rem, 화면의 5%, 최대 2.5rem */
+        font-size: clamp(1.5rem, 5vw, 2.5rem); 
         font-weight: 900;
-        color: #000000; /* 다크모드에서도 검정 */
-        white-space: nowrap; /* 줄바꿈 금지 */
+        /* 👇 [수정 핵심] 검정색(#000) 강제 고정 대신, 앱 테마에 따라 자동 변경되는 변수 사용 */
+        color: var(--text-color); 
+        white-space: nowrap; 
         text-align: left;
         margin-bottom: 20px;
     }
 
-    /* 스코어카드 박스 디자인 */
+    /* 스코어카드 박스 디자인 (여기는 디자인 유지를 위해 흰 배경+검은 글씨 고정) */
     .metric-container {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: white; /* 배경 흰색 고정 */
+        background: white; 
         border-radius: 15px;
         padding: 20px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.08);
@@ -55,7 +56,7 @@ st.markdown("""
     .metric-value {
         font-size: 2rem;
         font-weight: 800;
-        color: #333; /* 숫자 검정 고정 */
+        color: #333; 
     }
     
     .val-safe { color: #2E8B57 !important; }
@@ -64,7 +65,7 @@ st.markdown("""
     .val-blue { color: #1E88E5 !important; }
     .val-purple { color: #8E24AA !important; }
 
-    /* [3] 부동산 목록 가독성 해결 (글자색 검정 강제) */
+    /* 부동산 목록 가독성 해결 (흰 카드 위 검은 글씨 강제) */
     .prop-card-sell { 
         background-color: #e8f5e9 !important; 
         border-left: 5px solid #2e7d32; 
@@ -80,7 +81,7 @@ st.markdown("""
         margin-bottom: 8px; 
     }
     
-    /* 카드 안의 모든 글씨를 검정색으로 강제 */
+    /* 카드 안의 모든 글씨 검정색 강제 */
     .prop-card-sell div, .prop-card-inherit div, .prop-title {
         color: #000000 !important;
         font-family: sans-serif;
@@ -260,7 +261,6 @@ with st.sidebar:
                 
                 col_info, col_del = st.columns([8, 2])
                 with col_info:
-                    # [CSS 수정] 내부 div에 직접 스타일 적용하여 가독성 확보
                     st.markdown(f"""
                         <div class="{css_class}">
                             <div class="prop-title">{icon} {p['name']}</div>
@@ -295,7 +295,7 @@ engine = WannabeEngine(age_curr, age_retire, age_death)
 ages, liq_norm, re_norm, ob_norm = engine.run_simulation(liquid_asset, monthly_save, monthly_spend, inf_val, return_rate, st.session_state.properties, annual_hobby_cost)
 score, grade = engine.calculate_score(ob_norm)
 
-# [1] 타이틀 반응형 적용 (무조건 한 줄)
+# [수정됨] 타이틀 색상을 'var(--text-color)'로 설정하여 배경에 따라 자동 변경
 st.markdown('<div class="responsive-title">📊 은퇴 준비 종합 진단</div>', unsafe_allow_html=True)
 
 # 스코어카드
@@ -337,7 +337,7 @@ with c3:
 
 st.write("") 
 
-# [2] 그래프 설정 수정: 터치 고정 (Fixed Range) 및 드래그 방지
+# 그래프 (터치/줌 고정)
 st.subheader("📈 자산별 생애 궤적")
 fig = go.Figure()
 
@@ -364,22 +364,20 @@ for p in st.session_state.properties:
                                text=f"↗ {p['name']}", showarrow=True, arrowhead=2, ay=-30, 
                                font=dict(color="#2e7d32", size=10))
 
-# 그래프 옵션: 축 고정(fixedrange) 추가하여 터치 시 변화 방지
 fig.update_layout(
     template="plotly_white", 
     height=400, 
     margin=dict(l=20, r=20, t=50, b=50), 
     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
-    dragmode=False, # 드래그 줌 방지
-    xaxis=dict(fixedrange=True), # X축 터치/줌 고정
-    yaxis=dict(fixedrange=True)  # Y축 터치/줌 고정
+    dragmode=False, 
+    xaxis=dict(fixedrange=True), 
+    yaxis=dict(fixedrange=True)  
 )
-# config에 staticPlot은 툴팁도 막으므로 제외하고, 대신 displayModeBar를 끔
 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'scrollZoom': False})
 
 st.divider()
 
-# --- 하단 섹션: 3단 구성 & 전문가 내용 복구 ---
+# --- 하단 섹션 ---
 col_expert, col_form = st.columns([1, 1])
 
 with col_expert:
