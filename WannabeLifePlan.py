@@ -227,7 +227,6 @@ with st.sidebar:
     with st.expander("3. 부동산 자산 (Real Estate)", expanded=True):
         with st.form("prop_form", clear_on_submit=True):
             r1_c1, r1_c2 = st.columns(2)
-            # [수정] 자산명 라벨 수정 및 placeholder '아파트' 추가
             p_name = r1_c1.text_input("자산명", placeholder="아파트")
             p_curr = r1_c2.number_input("현재가(억)", 0, 300, 10)
             r2_c1, r2_c2 = st.columns(2)
@@ -361,16 +360,20 @@ for p in st.session_state.properties:
                                text=f"↗ {p['name']}", showarrow=True, arrowhead=2, ay=-30, 
                                font=dict(color="#2e7d32", size=10))
 
-# 범례 우측 & 축 제목 설정
+# [수정] 범례(Legend) 상단 우측 배치 (가로) & Y축 제목 수정 & 모바일 폭 해결
 fig.update_layout(
     template="plotly_white", 
     height=400, 
     margin=dict(l=20, r=20, t=50, b=50), 
     
+    # [핵심] 범례를 그래프 '상단 우측'에 '가로'로 배치
+    # 이렇게 해야 그래프 폭(Width)을 안 잡아먹어서 모바일에서 넓게 보임
     legend=dict(
-        orientation="v", 
-        yanchor="top", y=1, 
-        xanchor="left", x=1.02 
+        orientation="h",       # 가로 방향
+        yanchor="bottom",      # 기준점 하단
+        y=1.02,                # 그래프 바로 위
+        xanchor="right",       # 기준점 우측
+        x=1                    # 그래프 오른쪽 끝에 맞춤
     ),
     
     dragmode=False, 
